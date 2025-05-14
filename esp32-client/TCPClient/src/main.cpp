@@ -6,7 +6,7 @@
 
 #include "camera_pins.h"
 
-const uint16_t port = 12345;
+const int16_t port = 12345;
 
 WiFiClient client;
 
@@ -26,7 +26,7 @@ void setup() {
 
   // Connect to server
   if (!client.connect(SERVER_IP, port)) {
-    Serial.println("Connection to server failend");
+    Serial.println("Connection to server failed");
     return;
   }
   Serial.println("Connected to server");
