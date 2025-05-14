@@ -1,7 +1,7 @@
 #include "esp_camera.h"
 #include "config.h"
 #include "imageprocessing.h"
-#include "shared_protocol/protocol.hpp"
+#include "protocol.hpp"
 #include <WiFi.h>
 
 #define CAMERA_MODEL_XIAO_ESP32S3
@@ -12,6 +12,8 @@ void configureCameraPins(camera_config_t* config);
 
 const int16_t port = 12345;
 const int16_t interval = 1000;
+
+uint32_t nextTime; 
 
 WiFiClient client;
 
@@ -81,7 +83,6 @@ void setup() {
 void loop() {
   
   static camera_fb_t *fb;
-  static uint32_t nextTime; 
 
   if (millis() - nextTime >= interval) {
     nextTime += interval;
@@ -103,9 +104,9 @@ void loop() {
     esp_camera_fb_return(fb);
 
     // Send Door Status
-    DoorState state = isDoorOpen(edgeCount) ? OPEN : CLOSED;
-    state = htonl(state);
-    client.wirte((const char *)&state, sizeof(state));
+    DoorState state = ImageProcessing::isDoorOpen(edgeCount) ? DoorState::OPEN : DoorState::CLOSED;
+    uint32_t u32_state = htonl((uint32_t)state);
+    client.write((const char *)&u32_state, sizeof(u32_state));
   }
 }
 

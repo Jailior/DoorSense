@@ -1,8 +1,8 @@
 #include "imageprocessing.h"
 
-int ImageProcessing::detectEdges(const uint8_t* image, int width, int height, uint8_t* output) {
+int ImageProcessing::detectEdges(const uint8_t* image, int width, int height) {
 
-    static const THRESHOLD = 100;
+    static const int THRESHOLD = 100;
 
     static const int sobelX[3][3] = {
         {-1, 0, 1},
