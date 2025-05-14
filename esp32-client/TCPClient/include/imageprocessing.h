@@ -8,11 +8,8 @@ class ImageProcessing {
 public:
     ImageProcessing() = delete; // Prevent instantiation
     ~ImageProcessing() = delete; // Prevent instantiation
-    static int countEdges(const uint8_t* image, int width, int height);
-    static void detectEdges(const uint8_t* image, int width, int height, uint8_t* output);
-    static void convertToGrayscale(const uint8_t* image, int width, int height, uint8_t* output);
-
-private:
+    static int detectEdges(const uint8_t* image, int width, int height);
+    static bool isDoorOpen(int edgeCount);
     
 };
 

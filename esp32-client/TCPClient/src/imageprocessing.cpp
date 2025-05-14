@@ -1,23 +1,8 @@
 #include "imageprocessing.h"
 
-void ImageProcessing::convertToGrayscale(const uint8_t* image, int width, int height, uint8_t* output) {
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int idx = (y * width + x);
-            uint8_t r = image[idx];
-            // uint8_t g = image[idx + 1];
-            // uint8_t b = image[idx + 2];
+int ImageProcessing::detectEdges(const uint8_t* image, int width, int height, uint8_t* output) {
 
-            // Grayscale conversion using luminosity
-            uint8_t gray = static_cast<uint8_t>(120.0);
-            output[idx] = gray;
-            // output[idx + 1] = gray;
-            // output[idx + 2] = gray;
-        }
-    }
-}
-
-void ImageProcessing::detectEdges(const uint8_t* image, int width, int height, uint8_t* output) {
+    static const THRESHOLD = 100;
 
     static const int sobelX[3][3] = {
         {-1, 0, 1},
@@ -30,6 +15,8 @@ void ImageProcessing::detectEdges(const uint8_t* image, int width, int height, u
         {0, 0, 0},
         {1, 2, 1}
     };
+
+    int edgePixelCount = 0;
 
     for (int y = 1; y < height - 1; y++) {
         for (int x = 1; x < width - 1; x++) {
@@ -48,8 +35,15 @@ void ImageProcessing::detectEdges(const uint8_t* image, int width, int height, u
             int magnitude = static_cast<int>(sqrt(gx * gx + gy * gy));
             magnitude = magnitude > 255 ? 255 : magnitude;
 
-            int idx = (y * width + x);
-            output[idx] = magnitude;
+            if (magnitude > THRESHOLD) {
+                edgePixelCount++;
+            }
         }
     }
+
+    return edgePixelCount;
+}
+
+bool ImageProcessing::isDoorOpen(int edgeCount) {
+    return edgeCount < 50000;
 }

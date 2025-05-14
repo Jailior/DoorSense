@@ -1,6 +1,7 @@
 #include "esp_camera.h"
 #include "config.h"
 #include "imageprocessing.h"
+#include "shared_protocol/protocol.hpp"
 #include <WiFi.h>
 
 #define CAMERA_MODEL_XIAO_ESP32S3
@@ -10,6 +11,7 @@
 void configureCameraPins(camera_config_t* config);
 
 const int16_t port = 12345;
+const int16_t interval = 1000;
 
 WiFiClient client;
 
@@ -61,48 +63,50 @@ void setup() {
   }
   Serial.println("Camera initialized.");
 
-  // Get Image
-  camera_fb_t *fb = esp_camera_fb_get();
-  if (!fb) {
-    Serial.println("Camera capture failed");
-    return;
-  }
+  nextTime = millis();
 
-  Serial.printf("Image width: %u, height: %u, len: %u\n", fb->width, fb->height, fb->len);
+  // // Send Image Length
+  // uint32_t img_len = fb->len;
+  // img_len = htonl(img_len); // Convert to network byte order
+  // client.write((const char *)&img_len, sizeof(img_len));
 
-  uint8_t *out = (uint8_t *) malloc(fb->len);
-  if (!out) {
-    Serial.println("Failed to allocate memory for image");
-    esp_camera_fb_return(fb);
-    return;
-  }
+  // // Send image data
+  // size_t bytes_sent = client.write(out, fb->len);
+  // Serial.printf("Sent %u of %u bytes\n", bytes_sent, ntohl(img_len));
 
-  // Convert to grayscale
-  // ImageProcessing::convertToGrayscale(fb->buf, fb->width, fb->height, out);
-  // Serial.println("Image converted to grayscale");
-
-  // Detect edges
-  ImageProcessing::detectEdges(fb->buf, fb->width, fb->height, out);
-  Serial.println("Image converted to edges image");
-
-  // Send Image Length
-  uint32_t img_len = fb->len;
-  img_len = htonl(img_len); // Convert to network byte order
-  client.write((const char *)&img_len, sizeof(img_len));
-
-  // Send image data
-  size_t bytes_sent = client.write(out, fb->len);
-  Serial.printf("Sent %u of %u bytes\n", bytes_sent, ntohl(img_len));
-
-  // Release the frame buffer
-  esp_camera_fb_return(fb);
-  client.stop();
-  Serial.println("Client disconnected");
+  // client.stop();
+  // Serial.println("Client disconnected");
 }
 
 void loop() {
-  // Nothing to do here
-  delay(1000);
+  
+  static camera_fb_t *fb;
+  static uint32_t nextTime; 
+
+  if (millis() - nextTime >= interval) {
+    nextTime += interval;
+  
+    // Get Image
+    fb = esp_camera_fb_get();
+    if (!fb) {
+      Serial.println("Camera capture failed");
+      return;
+    }
+
+    Serial.printf("Image width: %u, height: %u, len: %u\n", fb->width, fb->height, fb->len);
+
+    // Detect edges
+    int edgeCount = ImageProcessing::detectEdges(fb->buf, fb->width, fb->height);
+    Serial.printf("Detected %d edge pixels\n", edgeCount);
+
+    // Release the frame buffer
+    esp_camera_fb_return(fb);
+
+    // Send Door Status
+    DoorState state = isDoorOpen(edgeCount) ? OPEN : CLOSED;
+    state = htonl(state);
+    client.wirte((const char *)&state, sizeof(state));
+  }
 }
 
 /* Function Definitions */

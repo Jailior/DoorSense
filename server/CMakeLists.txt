@@ -19,6 +19,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 find_package(Boost REQUIRED system thread)
 
+find_package(OpenCV REQUIRED core imgproc highgui)
+
 # Source files
 file(GLOB_RECURSE SOURCES src/*.cpp)
 file(GLOB_RECURSE HEADERS include/*.h src/*.h)
@@ -33,4 +35,5 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME}
   Boost::system
   Boost::thread
+  ${OpenCV_LIBS}
 )
