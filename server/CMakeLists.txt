@@ -6,20 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# include(FetchContent)
-
-# # Boost
-# FetchContent_Declare(
-#   Boost
-#   GIT_REPOSITORY https://github.com/boostorg/boost.git
-#   GIT_PROGRESS TRUE
-#   GIT_TAG boost-1.82.0
-# )
-# FetchContent_MakeAvailable(Boost)
-
 find_package(Boost REQUIRED system thread)
-
-find_package(OpenCV REQUIRED core imgproc highgui)
 
 # Source files
 file(GLOB_RECURSE SOURCES src/*.cpp)
@@ -35,5 +22,4 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME}
   Boost::system
   Boost::thread
-  ${OpenCV_LIBS}
 )

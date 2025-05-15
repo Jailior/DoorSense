@@ -1,16 +1,13 @@
 #include <boost/asio.hpp>
-#include <opencv2/opencv.hpp>
-#include <fstream>
 #include <iostream>
-
-#include "protocol.hpp"
 
 using boost::asio::ip::tcp;
 
 const unsigned int PORT = 12345;
-const int HEIGHT = 240;
-const int WIDTH = 240;
 const bool DEBUG = true;
+const unsigned int OPEN_THRESHOLD = 2000;
+
+bool door_open = false;
 
 #define ifdebug if(DEBUG)
 
@@ -29,34 +26,22 @@ int main() {
         ifdebug std::cout << "Client connected.\n";
 
         for (;;) {
-            {
-                // uint32_t img_length;
-                // boost::asio::read(socket, boost::asio::buffer(&img_length, sizeof(img_length)));
-                // img_length = ntohl(img_length); // Conver to host byte order
+                        
+            uint32_t edge_count;
+            boost::asio::read(socket, boost::asio::buffer(&edge_count, sizeof(edge_count)));
+            edge_count = ntohl(edge_count);
 
-                // ifdebug std::cout << "Got image length: " << img_length << std::endl;
+            ifdebug std::cout << "Received edge count: " << edge_count << std::endl;
 
-                // std::vector<uint8_t> buffer(img_length);
-                // boost::asio::read(socket, boost::asio::buffer(buffer, buffer.size()));
-
-                // ifdebug std::cout << "Read Image successfully.\n";
-
-                // // Convert image into jpeg and save
-                // cv::Mat img(HEIGHT, WIDTH, CV_8UC1, buffer.data());
-                // std::vector<int> params = {cv::IMWRITE_JPEG_QUALITY, 90};
-                // cv::imwrite("received_img.jpg", img, params);
-                // ifdebug std::cout << "Image received and saved as received_image.jpg" << std::endl;
+            if (edge_count > OPEN_THRESHOLD) {
+                door_open = true;
+            } else {
+                door_open = false;
             }
-            uint8_t bytes;
-            boost::asio::read(socket, boost::asio::buffer(&bytes, sizeof(bytes)));
-            bytes = ntohl(bytes);
 
-            ifdebug std::cout << "Received door status bytes\n";
-            
-            DoorState state = (DoorState) bytes;
-            std::string stateString = DoorState::to_string(state);
-
-            std::cout << "Door Status: " << stateString << std::endl;
+            if (door_open) {
+                std::cout << "ALERT: Door is open\n";
+            }
         }
 
         socket.close();
@@ -68,34 +53,3 @@ int main() {
 
     return 0;
 }
-
-
-
-
- // try {
-    // boost::asio::io_context io_context;
-    // tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(), PORT));
-
-    // std::cout << "Server is running on port " << PORT << std::endl;
-
-    // tcp::socket socket(io_context);
-    // acceptor.accept(socket);
-    // std::cout << "Client connected" << std::endl;
-
-    // uint32_t img_length;
-    // boost::asio::read(socket, boost::asio::buffer(&img_length, sizeof(img_length)));
-
-    // std::vector<uint8_t> buffer(img_length);
-    // boost::asio::read(socket, boost::asio::buffer(buffer));
-
-
-    // std::ofstream file("received_image.jpg", std::ios::binary);
-    // file.write(reinterpret_cast<const char*>(buffer.data()), img_length);
-    // file.close();
-
-    // std::cout << "Image received and saved as received_image.jpg" << std::endl;
-    // socket.close();
-    // acceptor.close();
-    // } catch (std::exception& e) {
-    //     std::cerr << "Exception: " << e.what() << std::endl;
-    // }
