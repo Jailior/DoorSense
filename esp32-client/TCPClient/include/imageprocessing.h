@@ -8,9 +8,7 @@ class ImageProcessing {
 public:
     ImageProcessing() = delete; // Prevent instantiation
     ~ImageProcessing() = delete; // Prevent instantiation
-    static int detectEdges(const uint8_t* image, int width, int height);
-    static bool isDoorOpen(int edgeCount);
-    
+    static int detectEdges(const uint8_t* image, int width, int height);    
 };
 
 #endif // IMAGE_PROCESSING_H

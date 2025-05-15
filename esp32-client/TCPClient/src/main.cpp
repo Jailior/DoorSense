@@ -1,8 +1,10 @@
+#include <WiFi.h>
+#include <string>
+
 #include "esp_camera.h"
 #include "config.h"
 #include "imageprocessing.h"
 #include "protocol.hpp"
-#include <WiFi.h>
 
 #define CAMERA_MODEL_XIAO_ESP32S3
 
@@ -11,11 +13,18 @@
 void configureCameraPins(camera_config_t* config);
 
 const int16_t port = 12345;
-const int16_t interval = 1000;
+const int16_t interval = 85;
+const uint32_t IMAGE_SIZE = 240 * 240; // 240x240 pixels
 
 uint32_t nextTime; 
-
 WiFiClient client;
+
+// Debugging configuration
+#define ifdebug if(DEBUG)
+const bool DEBUG = false;
+unsigned long max_capture_time = 0;
+unsigned long max_detect_time = 0;
+unsigned long max_send_time = 0;
 
 void setup() {
   // Serial port for debugging
@@ -45,15 +54,15 @@ void setup() {
   camera_config_t config;
   configureCameraPins(&config);
   config.xclk_freq_hz = 20000000;
-  config.frame_size = FRAMESIZE_QVGA;
-  config.pixel_format = PIXFORMAT_GRAYSCALE;
   config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
   config.fb_location = CAMERA_FB_IN_PSRAM;
   config.jpeg_quality = 12;
   config.fb_count = 1;
 
-  // Best option for face detection/recognition
+  config.frame_size = FRAMESIZE_QVGA;
+  config.pixel_format = PIXFORMAT_GRAYSCALE;
   config.frame_size = FRAMESIZE_240X240;
+
 #if CONFIG_IDF_TARGET_ESP32S3
     config.fb_count = 2;
 #endif
@@ -66,26 +75,18 @@ void setup() {
   Serial.println("Camera initialized.");
 
   nextTime = millis();
-
-  // // Send Image Length
-  // uint32_t img_len = fb->len;
-  // img_len = htonl(img_len); // Convert to network byte order
-  // client.write((const char *)&img_len, sizeof(img_len));
-
-  // // Send image data
-  // size_t bytes_sent = client.write(out, fb->len);
-  // Serial.printf("Sent %u of %u bytes\n", bytes_sent, ntohl(img_len));
-
-  // client.stop();
-  // Serial.println("Client disconnected");
 }
 
 void loop() {
   
   static camera_fb_t *fb;
 
+  unsigned long start, t_capture, t_detect, t_send;
+
   if (millis() - nextTime >= interval) {
     nextTime += interval;
+
+    ifdebug start = millis();
   
     // Get Image
     fb = esp_camera_fb_get();
@@ -93,20 +94,43 @@ void loop() {
       Serial.println("Camera capture failed");
       return;
     }
-
-    Serial.printf("Image width: %u, height: %u, len: %u\n", fb->width, fb->height, fb->len);
+    ifdebug t_capture = millis();
 
     // Detect edges
     int edgeCount = ImageProcessing::detectEdges(fb->buf, fb->width, fb->height);
-    Serial.printf("Detected %d edge pixels\n", edgeCount);
+    ifdebug Serial.printf("Detected %d edge pixels\n", edgeCount);
+    ifdebug t_detect = millis();
 
     // Release the frame buffer
     esp_camera_fb_return(fb);
 
-    // Send Door Status
-    DoorState state = ImageProcessing::isDoorOpen(edgeCount) ? DoorState::OPEN : DoorState::CLOSED;
-    uint32_t u32_state = htonl((uint32_t)state);
-    client.write((const char *)&u32_state, sizeof(u32_state));
+    // Send edge count
+    uint32_t edge_count = htonl(edgeCount); // Convert to network byte order
+    client.write((const char *)&edge_count, sizeof(edge_count));
+    ifdebug t_send = millis();
+
+    ifdebug {
+      Serial.printf("Timing: Capture: %lu ms, Detect: %lu ms, Send: %lu ms\n", 
+                    t_capture - start, t_detect - t_capture, t_send - t_detect);
+      if (t_capture - start > max_capture_time) {
+        max_capture_time = t_capture - start;
+      }
+      if (t_detect - t_capture > max_detect_time) {
+        max_detect_time = t_detect - t_capture;
+      }
+      if (t_send - t_detect > max_send_time) {
+        max_send_time = t_send - t_detect;
+      }
+      Serial.printf("Max times: Capture: %lu ms, Detect: %lu ms, Send: %lu ms\n", 
+                    max_capture_time, max_detect_time, max_send_time);
+    }
+
+    // Check for server connection
+    if (!client.connected()) {
+      Serial.println("Server disconnected");
+      delay(2000);
+      client.connect(SERVER_IP, port);
+    }
   }
 }
 
