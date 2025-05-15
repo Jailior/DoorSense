@@ -1,6 +1,6 @@
 # DoorSense - Door Monitoring System
 
-This project uses an **ESP32-CAM** module to monitor the state of an image frame, specifically a door. It performs **edge detection** on the ESP32 and streams edge count readinings via **TCP** to a **C++ server**. The server evaluates the state of the door, either open or closed, and displays real-time data using a GUI built with **ImGui**.
+This project uses an **ESP32-CAM** module to monitor the state of an image frame, specifically a door. It performs **edge detection** on the ESP32 and streams edge count readings via **TCP** to a **C++ server**. The server evaluates the state of the door, either open or closed, and displays real-time data using a GUI built with **ImGui**.
 
 ## Features
 
