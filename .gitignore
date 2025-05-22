@@ -6,6 +6,9 @@ esp32-client/TCPClient/.vscode/ipch
 esp32-client/TCPClient/include/config.h
 server/build/*
 
+esp32-client/TCPClient.include/camera_pins.h
+esp32-client/TCPClient.include/camera_index.h
+
 
 ## ImGui Artifacts
 

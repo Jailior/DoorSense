@@ -71,6 +71,9 @@ Define the credentials as so:
 
 The server IP is the local IP address of the machine running the C++ server.
 
+Additionally, add the files `camera_pins.h` and `camera_index.h` to the include folder for your ESP32 model. For this project the XIAO ESP32-S3 Sense was used
+with available header files on the *[SeeedStudio GitHub](https://github.com/limengdu/SeeedStudio-XIAO-ESP32S3-Sense-camera/tree/main/take_photos)*.
+
 ### On Server (Linux/Windows):
 
 ```bash
